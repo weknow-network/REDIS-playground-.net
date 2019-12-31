@@ -13,13 +13,13 @@ using Xunit.Abstractions;
 
 namespace RedisPlayground
 {
-    public class Redis_Database_Tests : RedisBaseTests
+    public class Redis_String_Tests : RedisBaseTests
     {
         private readonly IDatabase _db;
 
         #region Ctor
 
-        public Redis_Database_Tests(ITestOutputHelper output) : base(output)
+        public Redis_String_Tests(ITestOutputHelper output) : base(output)
         {
             _db = _redis.GetDatabase();
         }
