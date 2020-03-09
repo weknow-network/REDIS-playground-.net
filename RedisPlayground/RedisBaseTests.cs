@@ -31,23 +31,37 @@ namespace RedisPlayground
             if(count == 1)
                 _portForwarding = Process.Start("kubectl", "port-forward --namespace redis svc/redis-master 6379:6379");
             _writer = new StringWriter(_buffer);
-            _redis = ConnectionMultiplexer.Connect("localhost", _writer);
+
+            string endpoint = Environment.GetEnvironmentVariable("REDIS_ENDPOINT");
+            if (string.IsNullOrEmpty(endpoint))
+                _redis = ConnectionMultiplexer.Connect("localhost", _writer);
+            else
+            {
+                string pass = Environment.GetEnvironmentVariable("REDIS_PASS");
+                _redis = ConnectionMultiplexer.Connect($"{endpoint},password={pass}");
+            }
         }
 
         #endregion // Ctor
 
         #region Dispose
 
-        public void Dispose()
-        {
+        protected virtual void Dispose(bool disposing)
+        { 
             _output.WriteLine(_buffer.ToString());
             _writer.Dispose();
             _redis.Dispose();
             int count = Interlocked.Decrement(ref _portForwardingCounter);
             if(count == 0)
                 _portForwarding?.Dispose();
-        } 
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
+        ~RedisBaseTests() => Dispose(false);
         #endregion // Dispose
     }
 }

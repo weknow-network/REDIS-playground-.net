@@ -29,23 +29,37 @@ namespace RedisPlayground
         [Fact]
         public async Task StringSet_Test()
         {
-            await _db.KeyDeleteAsync("A").ConfigureAwait(false);
-            await _db.StringSetAsync("A", 1).ConfigureAwait(false);
-            RedisValue value = await _db.StringGetAsync("A").ConfigureAwait(false);
+            try
+            {
+                await _db.KeyDeleteAsync("A").ConfigureAwait(false);
+                await _db.StringSetAsync("A", 1).ConfigureAwait(false);
+                RedisValue value = await _db.StringGetAsync("A").ConfigureAwait(false);
 
-            Assert.True(value.TryParse(out double val));
-            Assert.Equal(1, val);
+                Assert.True(value.TryParse(out double val));
+                Assert.Equal(1, val);
+            }
+            finally
+            {
+                await _db.KeyDeleteAsync("A").ConfigureAwait(false);
+            }
         }
 
         [Fact]
         public async Task StringSetAppend_Test()
         {
-            await _db.KeyDeleteAsync("A").ConfigureAwait(false);
-            await _db.StringSetAsync("A", "ABC").ConfigureAwait(false);
-            await _db.StringAppendAsync("A", "DE").ConfigureAwait(false);
-            RedisValue value = await _db.StringGetAsync("A").ConfigureAwait(false);
+            try
+            {
+                await _db.KeyDeleteAsync("A").ConfigureAwait(false);
+                await _db.StringSetAsync("A", "ABC").ConfigureAwait(false);
+                await _db.StringAppendAsync("A", "DE").ConfigureAwait(false);
+                RedisValue value = await _db.StringGetAsync("A").ConfigureAwait(false);
 
-            Assert.Equal("ABCDE", value);
+                Assert.Equal("ABCDE", value);
+            }
+            finally
+            {
+                await _db.KeyDeleteAsync("A").ConfigureAwait(false);
+            }
         }
     }
 }

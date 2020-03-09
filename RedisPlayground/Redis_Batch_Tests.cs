@@ -31,24 +31,30 @@ namespace RedisPlayground
         public async Task Batch_Test()
         {
             var key = "BATCH_TEST";
-            await _db.KeyDeleteAsync(key).ConfigureAwait(false);
-            //await _db.StringSetAsync(key, "batch-sent").ConfigureAwait(false);
+            try
+            {
+                await _db.KeyDeleteAsync(key).ConfigureAwait(false);
+                //await _db.StringSetAsync(key, "batch-sent").ConfigureAwait(false);
 
-            var batch = _db.CreateBatch();
-            Task<bool>[] tasks = (from i in Enumerable.Range(0, 5)
-                        let v = (char)('A' + i)
-                        select batch.SetAddAsync(key, v.ToString()))
-                        .ToArray(); 
-            batch.Execute();
-            bool[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
-            RedisValue[] arr = await _db.SetMembersAsync(key).ConfigureAwait(false);
+                var batch = _db.CreateBatch();
+                Task<bool>[] tasks = (from i in Enumerable.Range(0, 5)
+                                      let v = (char)('A' + i)
+                                      select batch.SetAddAsync(key, v.ToString()))
+                            .ToArray();
+                batch.Execute();
+                bool[] results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                RedisValue[] arr = await _db.SetMembersAsync(key).ConfigureAwait(false);
 
-            Array.Sort(arr, (x, y) => string.Compare(x, y));
-            Assert.All(results, b => Assert.True(b));
-            Assert.Equal(5, arr.Length);
-            Assert.True(arr.SequenceEqual(new RedisValue[] { "A", "B", "C", "D", "E" }));
+                Array.Sort(arr, (x, y) => string.Compare(x, y));
+                Assert.All(results, b => Assert.True(b));
+                Assert.Equal(5, arr.Length);
+                Assert.True(arr.SequenceEqual(new RedisValue[] { "A", "B", "C", "D", "E" }));
+            }
+            finally
+            {
+                await _db.KeyDeleteAsync(key).ConfigureAwait(false);
+            }
         }
-
 
     }
 }

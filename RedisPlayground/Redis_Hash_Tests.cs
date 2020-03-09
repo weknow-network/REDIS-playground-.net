@@ -29,12 +29,20 @@ namespace RedisPlayground
         [Fact]
         public async Task Hash_Test()
         {
-            await _db.HashDeleteAsync("Classes", "Class A").ConfigureAwait(false);
-            await _db.HashSetAsync("Classes", "Class A", 10).ConfigureAwait(false);
-            RedisValue value = await _db.HashGetAsync("Classes", "Class A").ConfigureAwait(false);
+            try
+            {
+                await _db.HashDeleteAsync("Classes", "Class A").ConfigureAwait(false);
+                await _db.HashSetAsync("Classes", "Class A", 10).ConfigureAwait(false);
+                RedisValue value = await _db.HashGetAsync("Classes", "Class A").ConfigureAwait(false);
 
-            Assert.True(value.TryParse(out double val));
-            Assert.Equal(10, val);
+                Assert.True(value.TryParse(out double val));
+                Assert.Equal(10, val);
+
+            }
+            finally
+            {
+                await _db.HashDeleteAsync("Classes", "Class A").ConfigureAwait(false);
+            }
         }
     }
 }

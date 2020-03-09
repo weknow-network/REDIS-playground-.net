@@ -1,6 +1,7 @@
 using StackExchange.Redis;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,12 +40,14 @@ namespace RedisPlayground
                 sub.Subscribe("messages")
                    .OnMessage(async channelMessage =>
                    {
+                       await Task.Delay(1).ConfigureAwait(false);
                        Assert.True(channelMessage.Message.TryParse(out value1));
                        gate1.Set();
                    });
                 sub.Subscribe("messages")
                    .OnMessage(async channelMessage =>
                    {
+                       await Task.Delay(1).ConfigureAwait(false);
                        Assert.True(channelMessage.Message.TryParse(out value2));
                        gate2.Set();
                    });
@@ -67,36 +70,35 @@ namespace RedisPlayground
             ISubscriber sub = _redis.GetSubscriber();
             ConcurrentQueue<double> queue = new ConcurrentQueue<double>();
             double value2 = 0;
-            using (var gate1 = new ManualResetEventSlim())
-            using (var gate2 = new ManualResetEventSlim())
+            using (var gate = new CountdownEvent(3))
             {
                 string message = string.Empty;
                 sub.Subscribe("news.*")
                    .OnMessage(async channelMessage =>
                    {
+                       await Task.Delay(1).ConfigureAwait(false);
                        Assert.True(channelMessage.Message.TryParse(out double value));
                        queue.Enqueue(value);
-                       gate1.Set();
+                       gate.Signal();
                    });
                 sub.Subscribe("sport.*")
                    .OnMessage(async channelMessage =>
                    {
                        Assert.True(channelMessage.Message.TryParse(out value2));
-                       gate2.Set();
+                       queue.Enqueue(value2);
+                       await Task.Delay(1).ConfigureAwait(false);
+                       gate.Signal();
                    });
                 await sub.PublishAsync("news.art.figurative", 1).ConfigureAwait(false);
                 await sub.PublishAsync("news.music.jazz", 2).ConfigureAwait(false);
                 await sub.PublishAsync("sport.Bike", 3).ConfigureAwait(false);
-                Assert.True(gate1.Wait(TimeSpan.FromSeconds(10)));
-                Assert.True(gate2.Wait(TimeSpan.FromSeconds(10)));
+                Assert.True(gate.Wait(TimeSpan.FromSeconds(10)));
             }
 
-            Assert.True(queue.TryDequeue(out double val));
-            Assert.Equal(1, val);
-            Assert.True(queue.TryDequeue(out val));
-            Assert.Equal(2, val);
-            Assert.False(queue.TryDequeue(out val));
-            Assert.Equal(3, value2);
+            var set = new HashSet<double>(queue);
+            Assert.Contains(1, set);
+            Assert.Contains(2, set);
+            Assert.Contains(3, set);
         } 
 
         #endregion // PubSub_PatternMatching_Test
